@@ -11,7 +11,10 @@ import (
 func GetProcessInfo(w http.ResponseWriter, r *http.Request) {
 	procs, err := process.Processes()
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
 	}
 
@@ -32,7 +35,6 @@ func GetProcessInfo(w http.ResponseWriter, r *http.Request) {
 				zombie++
 			}
 		}
-		// top by CPU: we take first 15 discovered (not ideal sorting but cheap)
 		if len(top) < 15 {
 			name, _ := p.Name()
 			user, _ := p.Username()
@@ -52,12 +54,15 @@ func GetProcessInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondJSON(w, http.StatusOK, models.ProcessInfo{
-		Total:    len(procs),
-		Running:  running,
-		Sleeping: sleeping,
-		Stopped:  stopped,
-		Zombie:   zombie,
-		Top:      top,
+	RespondJSON(w, JSONResponse{
+		Status: http.StatusOK,
+		Payload: models.ProcessInfo{
+			Total:    len(procs),
+			Running:  running,
+			Sleeping: sleeping,
+			Stopped:  stopped,
+			Zombie:   zombie,
+			Top:      top,
+		},
 	})
 }

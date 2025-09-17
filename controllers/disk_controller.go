@@ -9,7 +9,6 @@ import (
 	"system-monitor/utils"
 )
 
-// sampling state
 var lastDiskIO = struct {
 	ts   time.Time
 	data map[string]disk.IOCountersStat
@@ -18,7 +17,10 @@ var lastDiskIO = struct {
 func GetDiskInfo(w http.ResponseWriter, r *http.Request) {
 	parts, err := disk.Partitions(false)
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
 	}
 
@@ -57,9 +59,11 @@ func GetDiskInfo(w http.ResponseWriter, r *http.Request) {
 		ioMap[name] = d
 	}
 
-	// update last
 	lastDiskIO.ts = now
 	lastDiskIO.data = ios
 
-	respondJSON(w, http.StatusOK, models.DiskInfo{Partitions: partitions, IOStats: ioMap})
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: models.DiskInfo{Partitions: partitions, IOStats: ioMap},
+	})
 }

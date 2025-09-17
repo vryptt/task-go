@@ -13,7 +13,10 @@ import (
 func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		respondJSON(w, http.StatusOK, models.ContainerInfo{Docker: []models.DockerContainer{}})
+		RespondJSON(w, JSONResponse{
+			Status:  http.StatusOK,
+			Payload: models.ContainerInfo{Docker: []models.DockerContainer{}},
+		})
 		return
 	}
 	defer cli.Close()
@@ -23,7 +26,10 @@ func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true})
 	if err != nil {
-		respondJSON(w, http.StatusOK, models.ContainerInfo{Docker: []models.DockerContainer{}})
+		RespondJSON(w, JSONResponse{
+			Status:  http.StatusOK,
+			Payload: models.ContainerInfo{Docker: []models.DockerContainer{}},
+		})
 		return
 	}
 
@@ -37,13 +43,6 @@ func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
 		if inspect.State != nil && inspect.State.StartedAt != "" {
 			uptime = inspect.State.StartedAt
 		}
-		cpuPerc := 0.0
-		memMB := uint64(0)
-
-		// try to read stats non-blocking with short timeout
-		statsCtx, sCancel := context.WithTimeout(ctx, 500*time.Millisecond)
-		_ = sCancel
-		_ = statsCtx
 
 		result = append(result, models.DockerContainer{
 			ID:         c.ID,
@@ -51,12 +50,15 @@ func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
 			Image:      c.Image,
 			Status:     c.Status,
 			Uptime:     uptime,
-			CPUPercent: cpuPerc,
-			MemMB:      memMB,
+			CPUPercent: 0.0,
+			MemMB:      0,
 		})
 	}
 
-	respondJSON(w, http.StatusOK, models.ContainerInfo{Docker: result})
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: models.ContainerInfo{Docker: result},
+	})
 }
 
 func firstOr(arr []string, fallback string) string {

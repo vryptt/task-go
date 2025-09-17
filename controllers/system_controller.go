@@ -11,7 +11,10 @@ import (
 func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 	info, err := host.Info()
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
 	}
 
@@ -36,5 +39,9 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		Users: users,
 	}
-	respondJSON(w, http.StatusOK, data)
+
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
 }

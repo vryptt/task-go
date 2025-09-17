@@ -16,7 +16,6 @@ import (
 func main() {
 	r := routes.SetupRoutes()
 
-	// Structured logging + CORS
 	corsAllowed := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET", "OPTIONS"}),
@@ -31,9 +30,8 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown
 	go func() {
-		fmt.Println("🚀 Server starting on :3000")
+		fmt.Println("Server starting on :3000")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}

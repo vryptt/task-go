@@ -5,12 +5,32 @@ import (
 	"net/http"
 )
 
-func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
+type JSONResponse struct {
+	Status  int         `json:"-"`
+	Payload interface{} `json:"payload,omitempty"`
+	Error   string      `json:"error,omitempty"`
+}
+
+func RespondJSON(w http.ResponseWriter, resp JSONResponse) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	w.WriteHeader(resp.Status)
+
+	if resp.Error != "" {
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": resp.Error})
+		return
+	}
+
+	if resp.Payload != nil {
+		_ = json.NewEncoder(w).Encode(resp.Payload)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]any{})
 }
 
 func Healthz(w http.ResponseWriter, r *http.Request) {
-	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: map[string]string{"status": "ok"},
+	})
 }

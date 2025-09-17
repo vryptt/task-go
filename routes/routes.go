@@ -19,7 +19,6 @@ func SetupRoutes() *mux.Router {
 	api.HandleFunc("/gpu", controllers.GetGPUInfo).Methods("GET")
 	api.HandleFunc("/containers", controllers.GetContainerInfo).Methods("GET")
 
-	// simple health
 	r.HandleFunc("/healthz", controllers.Healthz).Methods("GET")
 
 	return r

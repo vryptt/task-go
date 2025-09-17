@@ -11,20 +11,15 @@ import (
 	"system-monitor/models"
 )
 
-/*
-This controller prefers using `nvidia-smi` if available.
-It runs:
- nvidia-smi --query-gpu=name,driver_version,memory.total,memory.used,utilization.gpu,temperature.gpu --format=csv,noheader,nounits
-and parses lines like:
- "GeForce RTX 3080, 535.43, 10240, 6144, 72, 67"
-*/
 func GetGPUInfo(w http.ResponseWriter, r *http.Request) {
 	out, err := exec.Command("nvidia-smi",
 		"--query-gpu=name,driver_version,memory.total,memory.used,utilization.gpu,temperature.gpu",
 		"--format=csv,noheader,nounits").Output()
 	if err != nil {
-		// nvidia-smi not available or error -> return empty
-		respondJSON(w, http.StatusOK, models.GPUInfo{GPUs: []models.GPU{}})
+		RespondJSON(w, JSONResponse{
+			Status:  http.StatusOK,
+			Payload: models.GPUInfo{GPUs: []models.GPU{}},
+		})
 		return
 	}
 
@@ -55,5 +50,8 @@ func GetGPUInfo(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	respondJSON(w, http.StatusOK, models.GPUInfo{GPUs: gpus})
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: models.GPUInfo{GPUs: gpus},
+	})
 }

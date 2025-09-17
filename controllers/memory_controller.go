@@ -11,7 +11,10 @@ import (
 func GetMemoryInfo(w http.ResponseWriter, r *http.Request) {
 	vm, err := mem.VirtualMemory()
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
 	}
 	swap, _ := mem.SwapMemory()
@@ -33,5 +36,8 @@ func GetMemoryInfo(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	respondJSON(w, http.StatusOK, data)
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
 }

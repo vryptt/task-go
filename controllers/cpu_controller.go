@@ -11,27 +11,30 @@ import (
 )
 
 func GetCPUInfo(w http.ResponseWriter, r *http.Request) {
-	// measure per-core and total (gopsutil pattern)
 	perCore, err := cpu.Percent(1*time.Second, true)
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
 	}
 	total, err := cpu.Percent(0, false)
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
 	}
 	loadAvg, _ := load.Avg()
 
-	// frequency info
 	info, _ := cpu.Info()
 	var mhz float64
 	if len(info) > 0 {
 		mhz = info[0].Mhz
 	}
 
-	// try sensors temperatures (may return empty)
 	temp := 0.0
 	if temps, err := cpuTemperatures(); err == nil && len(temps) > 0 {
 		temp = temps[0]
@@ -52,7 +55,6 @@ func GetCPUInfo(w http.ResponseWriter, r *http.Request) {
 		Cores:        runtime.NumCPU(),
 	}
 
-	// compute total if available else approximate
 	if len(total) > 0 {
 		data.Usage.Total = total[0]
 	} else {
@@ -65,5 +67,8 @@ func GetCPUInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondJSON(w, http.StatusOK, data)
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
 }

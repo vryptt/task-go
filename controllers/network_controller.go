@@ -19,8 +19,24 @@ var lastNetIO = struct {
 func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
 	ifaces, err := psnet.Interfaces()
 	if err != nil {
-		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
 		return
+	}
+
+	ioStats, err := psnet.IOCounters(true)
+	if err != nil {
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  err.Error(),
+		})
+		return
+	}
+	ioMapStats := make(map[string]psnet.IOCountersStat)
+	for _, s := range ioStats {
+		ioMapStats[s.Name] = s
 	}
 
 	var interfaces []models.NetworkInterface
@@ -32,15 +48,17 @@ func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		stat := ioMapStats[iface.Name]
+
 		interfaces = append(interfaces, models.NetworkInterface{
 			Name:      iface.Name,
 			IPv4:      ipv4,
-			RxBytes:   iface.BytesRecv,
-			TxBytes:   iface.BytesSent,
-			RxPackets: iface.PacketsRecv,
-			TxPackets: iface.PacketsSent,
-			Errors:    iface.Errin + iface.Errout,
-			Dropped:   iface.Dropin + iface.Dropout,
+			RxBytes:   stat.BytesRecv,
+			TxBytes:   stat.BytesSent,
+			RxPackets: stat.PacketsRecv,
+			TxPackets: stat.PacketsSent,
+			Errors:    stat.Errin + stat.Errout,
+			Dropped:   stat.Dropin + stat.Dropout,
 		})
 	}
 
@@ -74,14 +92,13 @@ func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	// IO per-second (delta sampling)
 	ios, _ := psnet.IOCounters(true)
 	now := time.Now()
 	elapsed := now.Sub(lastNetIO.ts).Seconds()
 	if elapsed <= 0 {
 		elapsed = 1
 	}
-	ioMap := models.NetworkIOMap{}
+	ioPerSec := models.NetworkIOMap{}
 	for _, stat := range ios {
 		prev, ok := lastNetIO.data[stat.Name]
 		var entry models.NetworkIO
@@ -89,20 +106,21 @@ func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
 			entry.RxBytesPerSec = float64(stat.BytesRecv-prev.BytesRecv) / elapsed
 			entry.TxBytesPerSec = float64(stat.BytesSent-prev.BytesSent) / elapsed
 		}
-		ioMap[stat.Name] = entry
+		ioPerSec[stat.Name] = entry
 	}
-
 	lastNetIO.ts = now
-	// rebuild map
 	m := map[string]psnet.IOCountersStat{}
 	for _, s := range ios {
 		m[s.Name] = s
 	}
 	lastNetIO.data = m
 
-	respondJSON(w, http.StatusOK, models.NetworkInfo{
-		Interfaces:  interfaces,
-		Connections: connections,
-		IOStats:     ioMap,
+	RespondJSON(w, JSONResponse{
+		Status: http.StatusOK,
+		Payload: models.NetworkInfo{
+			Interfaces:  interfaces,
+			Connections: connections,
+			IOStats:     ioPerSec,
+		},
 	})
 }
