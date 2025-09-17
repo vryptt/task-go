@@ -9,17 +9,21 @@ import (
 )
 
 func GetMemoryInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetMemoryInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
+
+func GetMemoryInfoData() models.MemoryInfo {
 	vm, err := mem.VirtualMemory()
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
+		return models.MemoryInfo{}
 	}
 	swap, _ := mem.SwapMemory()
 
-	data := models.MemoryInfo{
+	return models.MemoryInfo{
 		RAM: models.RAMInfo{
 			TotalMB:      utils.BytesToMB(vm.Total),
 			UsedMB:       utils.BytesToMB(vm.Used),
@@ -35,9 +39,4 @@ func GetMemoryInfo(w http.ResponseWriter, r *http.Request) {
 			UsagePercent: swap.UsedPercent,
 		},
 	}
-
-	RespondJSON(w, JSONResponse{
-		Status:  http.StatusOK,
-		Payload: data,
-	})
 }

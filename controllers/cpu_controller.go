@@ -11,34 +11,26 @@ import (
 )
 
 func GetCPUInfo(w http.ResponseWriter, r *http.Request) {
-	perCore, err := cpu.Percent(1*time.Second, true)
-	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
-	}
-	total, err := cpu.Percent(0, false)
-	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
-	}
-	loadAvg, _ := load.Avg()
+	data := GetCPUInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
 
+
+func GetCPUInfoData() models.CPUInfo {
+	perCore, _ := cpu.Percent(1*time.Second, true)
+	total, _ := cpu.Percent(0, false)
+	loadAvg, _ := load.Avg()
 	info, _ := cpu.Info()
+
 	var mhz float64
 	if len(info) > 0 {
 		mhz = info[0].Mhz
 	}
 
 	temp := 0.0
-	if temps, err := cpuTemperatures(); err == nil && len(temps) > 0 {
-		temp = temps[0]
-	}
 
 	data := models.CPUInfo{
 		Usage: models.CPUUsage{
@@ -67,8 +59,5 @@ func GetCPUInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	RespondJSON(w, JSONResponse{
-		Status:  http.StatusOK,
-		Payload: data,
-	})
+	return data
 }

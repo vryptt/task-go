@@ -11,13 +11,17 @@ import (
 )
 
 func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetContainerInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
+
+func GetContainerInfoData() models.ContainerInfo {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status:  http.StatusOK,
-			Payload: models.ContainerInfo{Docker: []models.DockerContainer{}},
-		})
-		return
+		return models.ContainerInfo{Docker: []models.DockerContainer{}}
 	}
 	defer cli.Close()
 
@@ -26,11 +30,7 @@ func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true})
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status:  http.StatusOK,
-			Payload: models.ContainerInfo{Docker: []models.DockerContainer{}},
-		})
-		return
+		return models.ContainerInfo{Docker: []models.DockerContainer{}}
 	}
 
 	result := []models.DockerContainer{}
@@ -55,10 +55,7 @@ func GetContainerInfo(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	RespondJSON(w, JSONResponse{
-		Status:  http.StatusOK,
-		Payload: models.ContainerInfo{Docker: result},
-	})
+	return models.ContainerInfo{Docker: result}
 }
 
 func firstOr(arr []string, fallback string) string {

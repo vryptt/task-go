@@ -12,15 +12,19 @@ import (
 )
 
 func GetGPUInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetGPUInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
+
+func GetGPUInfoData() models.GPUInfo {
 	out, err := exec.Command("nvidia-smi",
 		"--query-gpu=name,driver_version,memory.total,memory.used,utilization.gpu,temperature.gpu",
 		"--format=csv,noheader,nounits").Output()
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status:  http.StatusOK,
-			Payload: models.GPUInfo{GPUs: []models.GPU{}},
-		})
-		return
+		return models.GPUInfo{GPUs: []models.GPU{}}
 	}
 
 	scanner := bufio.NewScanner(bytes.NewReader(out))
@@ -50,8 +54,5 @@ func GetGPUInfo(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	RespondJSON(w, JSONResponse{
-		Status:  http.StatusOK,
-		Payload: models.GPUInfo{GPUs: gpus},
-	})
+	return models.GPUInfo{GPUs: gpus}
 }

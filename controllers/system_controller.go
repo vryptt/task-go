@@ -8,19 +8,15 @@ import (
 	"system-monitor/models"
 )
 
-func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
+func GetSystemInfoData() models.SystemInfo {
 	info, err := host.Info()
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
+		return models.SystemInfo{}
 	}
 
-	usersRaw, _ := host.Users()
+	rawUsers, _ := host.Users()
 	users := []models.UserInfo{}
-	for _, u := range usersRaw {
+	for _, u := range rawUsers {
 		users = append(users, models.UserInfo{
 			Username:  u.User,
 			TTY:       u.Terminal,
@@ -28,7 +24,7 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	data := models.SystemInfo{
+	return models.SystemInfo{
 		Hostname:      info.Hostname,
 		UptimeSeconds: info.Uptime,
 		OS: models.OSInfo{
@@ -38,6 +34,17 @@ func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
 			Architecture: info.KernelArch,
 		},
 		Users: users,
+	}
+}
+
+func GetSystemInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetSystemInfoData()
+	if data.Hostname == "" {
+		RespondJSON(w, JSONResponse{
+			Status: http.StatusInternalServerError,
+			Error:  "failed to fetch system info",
+		})
+		return
 	}
 
 	RespondJSON(w, JSONResponse{

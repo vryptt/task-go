@@ -9,13 +9,17 @@ import (
 )
 
 func GetProcessInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetProcessInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
+
+func GetProcessInfoData() models.ProcessInfo {
 	procs, err := process.Processes()
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
+		return models.ProcessInfo{}
 	}
 
 	var running, sleeping, stopped, zombie int
@@ -54,15 +58,12 @@ func GetProcessInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	RespondJSON(w, JSONResponse{
-		Status: http.StatusOK,
-		Payload: models.ProcessInfo{
-			Total:    len(procs),
-			Running:  running,
-			Sleeping: sleeping,
-			Stopped:  stopped,
-			Zombie:   zombie,
-			Top:      top,
-		},
-	})
+	return models.ProcessInfo{
+		Total:    len(procs),
+		Running:  running,
+		Sleeping: sleeping,
+		Stopped:  stopped,
+		Zombie:   zombie,
+		Top:      top,
+	}
 }

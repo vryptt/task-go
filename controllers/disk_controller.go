@@ -15,13 +15,17 @@ var lastDiskIO = struct {
 }{data: map[string]disk.IOCountersStat{}}
 
 func GetDiskInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetDiskInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
+
+func GetDiskInfoData() models.DiskInfo {
 	parts, err := disk.Partitions(false)
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
+		return models.DiskInfo{Partitions: []models.Partition{}, IOStats: models.DiskIOMap{}}
 	}
 
 	var partitions []models.Partition
@@ -62,8 +66,5 @@ func GetDiskInfo(w http.ResponseWriter, r *http.Request) {
 	lastDiskIO.ts = now
 	lastDiskIO.data = ios
 
-	RespondJSON(w, JSONResponse{
-		Status:  http.StatusOK,
-		Payload: models.DiskInfo{Partitions: partitions, IOStats: ioMap},
-	})
+	return models.DiskInfo{Partitions: partitions, IOStats: ioMap}
 }

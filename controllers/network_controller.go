@@ -17,22 +17,22 @@ var lastNetIO = struct {
 }{data: map[string]psnet.IOCountersStat{}}
 
 func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
+	data := GetNetworkInfoData()
+	RespondJSON(w, JSONResponse{
+		Status:  http.StatusOK,
+		Payload: data,
+	})
+}
+
+func GetNetworkInfoData() models.NetworkInfo {
 	ifaces, err := psnet.Interfaces()
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
+		return models.NetworkInfo{}
 	}
 
 	ioStats, err := psnet.IOCounters(true)
 	if err != nil {
-		RespondJSON(w, JSONResponse{
-			Status: http.StatusInternalServerError,
-			Error:  err.Error(),
-		})
-		return
+		return models.NetworkInfo{}
 	}
 	ioMapStats := make(map[string]psnet.IOCountersStat)
 	for _, s := range ioStats {
@@ -49,7 +49,6 @@ func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		stat := ioMapStats[iface.Name]
-
 		interfaces = append(interfaces, models.NetworkInterface{
 			Name:      iface.Name,
 			IPv4:      ipv4,
@@ -115,12 +114,9 @@ func GetNetworkInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	lastNetIO.data = m
 
-	RespondJSON(w, JSONResponse{
-		Status: http.StatusOK,
-		Payload: models.NetworkInfo{
-			Interfaces:  interfaces,
-			Connections: connections,
-			IOStats:     ioPerSec,
-		},
-	})
+	return models.NetworkInfo{
+		Interfaces:  interfaces,
+		Connections: connections,
+		IOStats:     ioPerSec,
+	}
 }
